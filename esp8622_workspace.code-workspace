@@ -14,9 +14,6 @@
 		{
 			"name": "temperature_bmp180",
 			"path": "temperature_bmp180"
-		},
-		{
-			"path": "."
 		}
 	],
 	"settings": {}
