@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"name": "blink",
+			"path": "blink"
+		},
+		{
+			"path": "awake"
+		},
+		{
+			"name": "mqtt_test",
+			"path": "mqtt_test"
+		},
+		{
+			"name": "temperature_bmp180",
+			"path": "temperature_bmp180"
+		},
+		{
+			"path": "."
+		}
+	],
+	"settings": {}
+}
