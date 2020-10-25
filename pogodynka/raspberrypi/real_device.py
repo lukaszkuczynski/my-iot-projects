@@ -4,6 +4,8 @@
 import time
 from bme280 import readBME280All
 from datetime import datetime
+import paho.mqtt.publish as publish
+
 
 # Using the Python Device SDK for IoT Hub:
 #   https://github.com/Azure/azure-iot-sdk-python
@@ -36,7 +38,7 @@ def iothub_client_telemetry_sample_run():
 
             # Build the message with simulated telemetry values.
             temperature,pressure,humidity = readBME280All()
-
+            humidity = round(humidity, 2)
             msg_txt_formatted = MSG_TXT.format(temperature=temperature, humidity=humidity, pressure=pressure)
             message = Message(msg_txt_formatted, content_encoding='utf-8', content_type='application/json')
 
@@ -50,6 +52,10 @@ def iothub_client_telemetry_sample_run():
             # Send the message.
             print( "Sending message: {}".format(message) )
             client.send_message(message)
+            publish.multiple([
+                {'topic': "balkon/temperature", 'payload': temperature},
+                {'topic': "balkon/humidity", 'payload': humidity}
+                ], hostname="192.168.0.138")
             print ( "Message successfully sent" )
 
     except KeyboardInterrupt:
