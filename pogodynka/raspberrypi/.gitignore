@@ -1,0 +1,6 @@
+SimulatedDevice.piy
+__pycache__
+nohup.out
+*.pyc
+*.env
+*.sh
