@@ -14,6 +14,14 @@
 		{
 			"name": "temperature_bmp180",
 			"path": "temperature_bmp180"
+		},
+		{
+			"name": "lcdtest",
+			"path": "lcdtest"
+		},
+		{
+			"name": "termometr",
+			"path": "termometr"
 		}
 	],
 	"settings": {}
