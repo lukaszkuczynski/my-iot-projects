@@ -114,9 +114,9 @@ void send_values_mqtt(float temperature, float pressure) {
 void display_values_lcd(float temperature, float pressure) {
   lcd.clear();
   lcd.setCursor(0, 0);
-  lcd.print(temperature);
+  lcd.printf("%.1f C", temperature);
   lcd.setCursor(0,1);
-  lcd.print(pressure);
+  lcd.printf("%.1f hPa (Luk)", pressure);
 }
 
 void loop() {  
