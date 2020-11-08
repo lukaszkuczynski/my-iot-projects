@@ -23,9 +23,6 @@
 			"name": "termometr",
 			"path": "termometr"
 		},
-		{
-			"path": "wps"
-		},
                 {
                         "path": "leds_n_switch"
                 }
