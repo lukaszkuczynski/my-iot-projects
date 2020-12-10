@@ -23,9 +23,21 @@
 			"name": "termometr",
 			"path": "termometr"
 		},
-                {
-                        "path": "leds_n_switch"
-                }
+		{
+			"path": "leds_n_switch"
+		},
+		{
+			"name": "openlight",
+			"path": "openlight"
+		},
+		{
+			"name": "plant_life",
+			"path": "plant_life"
+		},
+		{
+			"name": "external_world",
+			"path": "external_world"
+		}
 	],
 	"settings": {}
 }
