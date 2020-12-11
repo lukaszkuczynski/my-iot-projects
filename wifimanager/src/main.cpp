@@ -8,15 +8,20 @@
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 #include <secrets.h>
 #include <ESP8266mDNS.h>
+#include <TM1637Display.h>
 
 char *accessPointName = ACCESSPOINT_NAME;
 char *accessPointPassword = ACCESSPOINT_PASSWORD;
 
 #define RESET_AP_PIN D1
+const int CLK = D2; //Set the CLK pin connection to the display
+const int DIO = D3;
 
 ESP8266WebServer server(80);
 
 WiFiManager wifiManager;
+
+TM1637Display display(CLK, DIO);
 
 void blinkNtimes(int n)
 {
@@ -88,6 +93,8 @@ void setup()
   server.on("/", HTTP_GET, handleRoot);
   server.onNotFound(handleNotFound);
   server.begin();
+
+  display.setBrightness(0x0a);
 }
 
 void loop()
@@ -98,6 +105,7 @@ void loop()
   // String ssid = WiFi.SSID().c_str();
   snprintf(s, sizeof(s), "SSID: zz, %d dbm", rssi);
   Serial.println(s);
+  display.showNumberDec(rssi);
   delay(500); // wait for a second
 }
 
