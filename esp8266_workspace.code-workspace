@@ -37,6 +37,10 @@
 		{
 			"name": "external_world",
 			"path": "external_world"
+		},
+		{
+			"name": "wifimanager",
+			"path": "wifimanager"
 		}
 	],
 	"settings": {}

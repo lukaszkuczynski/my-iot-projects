@@ -7,27 +7,46 @@
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h> //https://github.com/tzapu/WiFiManager
 #include <secrets.h>
+#include <ESP8266mDNS.h>
 
 char *accessPointName = ACCESSPOINT_NAME;
 char *accessPointPassword = ACCESSPOINT_PASSWORD;
 
 #define RESET_AP_PIN D1
 
-bool resetAp = false;
+ESP8266WebServer server(80);
+
 WiFiManager wifiManager;
+
+void blinkNtimes(int n)
+{
+  for (size_t i = 0; i < n; i++)
+  {
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(200);
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(200);
+  }
+}
 
 ICACHE_RAM_ATTR void detectsClick()
 {
   Serial.println("click detected! Resetting AP");
   wifiManager.resetSettings();
+  blinkNtimes(5);
   ESP.reset();
 }
+
+void handleRoot();
+void handleNotFound();
 
 void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(115200);
   pinMode(RESET_AP_PIN, INPUT_PULLUP);
+  pinMode(LED_BUILTIN, OUTPUT);
+
   attachInterrupt(digitalPinToInterrupt(RESET_AP_PIN), detectsClick, RISING);
 
   //WiFiManager
@@ -56,14 +75,42 @@ void setup()
 
   Serial.println("local ip");
   Serial.println(WiFi.localIP());
+
+  if (MDNS.begin("esp8266"))
+  { // Start the mDNS responder for esp8266.local
+    Serial.println("mDNS responder started");
+  }
+  else
+  {
+    Serial.println("Error setting up MDNS responder!");
+  }
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.onNotFound(handleNotFound);
+  server.begin();
 }
 
 void loop()
 {
+  server.handleClient();
   char s[32];
   int32_t rssi = WiFi.RSSI();
   // String ssid = WiFi.SSID().c_str();
   snprintf(s, sizeof(s), "SSID: zz, %d dbm", rssi);
   Serial.println(s);
-  delay(1000); // wait for a second
+  delay(500); // wait for a second
+}
+
+void handleRoot()
+{ // When URI / is requested, send a web page with a button to toggle the LED
+  blinkNtimes(2);
+  int32_t rssi = WiFi.RSSI();
+  char response[100];
+  snprintf(response, sizeof(response), "<h1>hello from ESP</h1><p>signal strength %d </p>", rssi);
+  server.send(200, "text/html", response);
+}
+
+void handleNotFound()
+{
+  server.send(404, "text/plain", "404: Not found"); // Send HTTP status 404 (Not Found) when there's no handler for the URI in the request
 }
