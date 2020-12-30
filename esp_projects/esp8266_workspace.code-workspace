@@ -41,7 +41,16 @@
 		{
 			"name": "wifimanager",
 			"path": "wifimanager"
-		}
+		},
+		{
+			"name": "alarm",
+			"path": "alarm"
+		},
+		{
+			"name": "awsiot",
+			"path": "awsiot"
+		},
+{"path": "wifiscan"}
 	],
 	"settings": {}
 }
