@@ -1,0 +1,10 @@
+sensor:
+  - platform: mqtt
+    name: internal_temp
+    state_topic: lukmqtt/internal_1/temperature
+    unit_of_measurement: C
+  - platform: mqtt
+    name: internal_temp_battery
+    state_topic: lukmqtt/internal_1/voltage
+    unit_of_measurement: mV
+
