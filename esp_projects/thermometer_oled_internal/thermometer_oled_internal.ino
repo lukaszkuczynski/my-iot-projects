@@ -15,8 +15,13 @@ void setup() {
   
   Serial.begin(9600);
   Serial.println("Starting");
+  pinMode(14, OUTPUT);
+
 
   Wire.begin();
+
+  digitalWrite(14, HIGH); // Turn on the display
+  delay(500);
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
@@ -36,6 +41,22 @@ void setup() {
     Serial.println("Could not find a valid BMP280 sensor, check wiring!");
     while (1);
   }
+
+  Serial.print("Temperature = ");
+  Serial.print(bmp.readTemperature());
+  Serial.println(" *C");
+   
+  Serial.print("Pressure = ");
+  Serial.print(bmp.readPressure());
+  Serial.println(" Pa");
+
+  display_oled_temp(bmp.readTemperature());
+  
+  delay(5000);
+  digitalWrite(14, LOW); // Turn off the display
+  Serial.println("Going sleep, bye");
+
+  ESP.deepSleep(5e6); 
 }
 
 void display_oled_temp(float temp) {
@@ -50,16 +71,4 @@ void display_oled_temp(float temp) {
 
 
 void loop() {
-  Serial.print("Temperature = ");
-  Serial.print(bmp.readTemperature());
-  Serial.println(" *C");
-   
-  Serial.print("Pressure = ");
-  Serial.print(bmp.readPressure());
-  Serial.println(" Pa");
-
-  display_oled_temp(bmp.readTemperature());
-  
-  delay(1000);
-
 }
