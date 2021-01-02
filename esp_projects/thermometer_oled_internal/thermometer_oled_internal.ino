@@ -10,17 +10,20 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 Adafruit_BMP085 bmp;
+ 
+ADC_MODE(ADC_VDD); // measure internal voltage, please
+
+const int OLED_TOGGLE_PIN = 14;
 
 void setup() {
   
   Serial.begin(9600);
   Serial.println("Starting");
-  pinMode(14, OUTPUT);
-
+  pinMode(OLED_TOGGLE_PIN, OUTPUT);
 
   Wire.begin();
 
-  digitalWrite(14, HIGH); // Turn on the display
+  digitalWrite(OLED_TOGGLE_PIN, HIGH); // Turn on the display
   delay(500);
 
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { // Address 0x3C for 128x32
@@ -28,8 +31,7 @@ void setup() {
     for(;;); // Don't proceed, loop forever
   }
 
-  
-  
+
   display.clearDisplay();
   display.setTextSize(1);      // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE); // Draw white text  
@@ -53,7 +55,7 @@ void setup() {
   display_oled_temp(bmp.readTemperature());
   
   delay(5000);
-  digitalWrite(14, LOW); // Turn off the display
+  digitalWrite(OLED_TOGGLE_PIN, LOW); // Turn off the display
   Serial.println("Going sleep, bye");
 
   ESP.deepSleep(5e6); 
@@ -66,6 +68,13 @@ void display_oled_temp(float temp) {
   display.setTextColor(SSD1306_WHITE); 
   display.print(temp);
   display.println("C");
+  // display battery state
+  display.setTextSize(1);
+  int internalVoltage = ESP.getVcc();
+  Serial.printf("ADC %f\n", internalVoltage);
+  display.print("battery: ");
+  display.print(internalVoltage);
+  display.print("mV");
   display.display();  
 }
 
