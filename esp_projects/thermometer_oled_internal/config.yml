@@ -7,4 +7,11 @@ sensor:
     name: internal_temp_battery
     state_topic: lukmqtt/internal_1/voltage
     unit_of_measurement: mV
-
+  - platform: mqtt
+    name: internal_temp_humidity
+    state_topic: lukmqtt/internal_1/humidity
+    unit_of_measurement: '%'
+  - platform: mqtt
+    name: internal_temp_pressure
+    state_topic: lukmqtt/internal_1/pressure
+    unit_of_measurement: hPa

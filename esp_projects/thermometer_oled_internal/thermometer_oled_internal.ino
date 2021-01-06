@@ -1,6 +1,6 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
-#include <Adafruit_BMP085.h>
+#include <Adafruit_BME280.h>
 #include <ESP8266WiFi.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -14,7 +14,7 @@
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-Adafruit_BMP085 bmp;
+Adafruit_BME280 bme;
  
 ADC_MODE(ADC_VDD); // measure internal voltage, please
 
@@ -23,6 +23,8 @@ const int OLED_TOGGLE_PIN = 14;
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, 1883);
 Adafruit_MQTT_Publish temperature_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/temperature");
+Adafruit_MQTT_Publish humudity_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/humidity");
+Adafruit_MQTT_Publish pressure_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/pressure");
 Adafruit_MQTT_Publish voltage_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/voltage");
 
 const int SLEEP_TIME = 1e6 * 60 * 5;
@@ -36,10 +38,22 @@ void connectWifi() {
   Serial.println(F(" WiFi connected."));
 }
 
-void sendTelemetry(float temp, int voltage) {
+void sendTelemetry(float temperature, float pressure, float humidity, int voltage) {
   MQTT_connect();
   int ret;
-  ret = temperature_publish.publish(temp);
+  ret = temperature_publish.publish(temperature);
+  if (!ret) {
+    Serial.println("Failed sending telemetry!!");
+  } else {
+    Serial.println("Telemetry sent.");
+  }
+  ret = humudity_publish.publish(humidity);
+  if (!ret) {
+    Serial.println("Failed sending telemetry!!");
+  } else {
+    Serial.println("Telemetry sent.");
+  }
+  ret = pressure_publish.publish(pressure);
   if (!ret) {
     Serial.println("Failed sending telemetry!!");
   } else {
@@ -78,21 +92,21 @@ void setup() {
   display.println("Thermometer, by Luke");
   display.display();
 
-  if (!bmp.begin()) { 
+  if (!bme.begin(0x76)) { 
     Serial.println("Could not find a valid BMP280 sensor, check wiring!");
     while (1);
   }
 
-  float temperature = bmp.readTemperature();
-  Serial.print("Temperature = ");
-  Serial.print(temperature);
-  Serial.println(" *C");
+  float temperature = bme.readTemperature();
+  float pressure = bme.readPressure() / 100.0F;
+  float humidity = bme.readHumidity();
+
   int internalVoltage = readInternalVoltage();
 
-  displayTelemetryOLED(temperature, internalVoltage);
+  displayTelemetryOLED(temperature, pressure, humidity, internalVoltage);
 
   connectWifi();
-  sendTelemetry(temperature, internalVoltage);
+  sendTelemetry(temperature, pressure, humidity, internalVoltage);
   
   delay(5000);
   digitalWrite(OLED_TOGGLE_PIN, LOW); // Turn off the display
@@ -101,19 +115,26 @@ void setup() {
   ESP.deepSleep(SLEEP_TIME); 
 }
 
-void displayTelemetryOLED(float temp, int voltage) {
+void displayTelemetryOLED(float temperature, float pressure, float humidity, int voltage) {
   display.clearDisplay();
   display.setCursor(0, 0);     // Start at top-left corner  
-  display.setTextSize(3);      
+  display.setTextSize(2);      
   display.setTextColor(SSD1306_WHITE); 
-  display.print(temp);
-  display.println("C");
+  display.print(temperature);
+  display.print("C|");
+  display.print(int(humidity));
+  display.println("%");
   // display battery state
   display.setTextSize(1);
   display.print("battery: ");
   display.print(voltage);
   display.print("mV");
   display.display();  
+
+  Serial.print("Temperature = "); Serial.print(temperature); Serial.println(" *C");
+  Serial.print("Pressure = "); Serial.print(pressure); Serial.println(" hpa");
+  Serial.print("Humidity = "); Serial.print(humidity); Serial.println(" %");
+
 }
 
 int readInternalVoltage() {
