@@ -3,7 +3,7 @@
 #include "my_local_wifi.h"
 #include <ESP8266WiFi.h>
 
-#define MQTT_SERVER "192.168.0.171"
+#define MQTT_SERVER "192.168.100.10"
 #define MQTT_SERVERPORT 1883
 
 WiFiClient client;

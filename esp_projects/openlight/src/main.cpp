@@ -1,8 +1,8 @@
 #include <Arduino.h>
 #include "mqtt.h"
 
-#define RELAY_PIN 5       // nodemcu v2
-#define REED_SENSOR_PIN 4 // nodemcu v2
+#define RELAY_PIN 5       // nodemcu v2 GPIO D1
+#define REED_SENSOR_PIN 4 // nodemcu v2 GPIO D2
 
 // #define RELAY_PIN 1       // for ESP-01
 // #define REED_SENSOR_PIN 3 // for ESP-01
@@ -38,7 +38,7 @@ void setup()
   pinMode(RELAY_PIN, OUTPUT);
   pinMode(REED_SENSOR_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(REED_SENSOR_PIN), detectsDoorChange, CHANGE);
-  connectWifi();
+  connectWifi(10);
   MQTT_re_connect();
   send_mqtt_door_state(-1);
 }

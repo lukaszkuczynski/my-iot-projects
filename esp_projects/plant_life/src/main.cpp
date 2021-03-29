@@ -3,8 +3,6 @@
 
 #define ONE_MINUTE 1e6 * 60
 
-// ADC_MODE(ADC_VDD);
-
 void setup()
 {
   Serial.begin(115200);

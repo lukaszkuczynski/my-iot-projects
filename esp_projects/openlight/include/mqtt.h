@@ -3,7 +3,7 @@
 #include "my_local_wifi.h"
 #include <ESP8266WiFi.h>
 
-#define MQTT_SERVER "192.168.0.171"
+#define MQTT_SERVER "192.168.100.10"
 #define MQTT_SERVERPORT 1883
 
 WiFiClient client;
@@ -11,15 +11,23 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, MQTT_SERVERPORT);
 Adafruit_MQTT_Publish door_publish_channel = Adafruit_MQTT_Publish(&mqtt, "/bedroom/wardrobe_door");
 Adafruit_MQTT_Publish power_publish_channel = Adafruit_MQTT_Publish(&mqtt, "/bedroom/power");
 
-void connectWifi()
+void connectWifi(uint8_t retries_count)
 {
     //connect to your local wi-fi network
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     //check wi-fi is connected to wi-fi network
+    uint8_t retries = retries_count;
     while (WiFi.status() != WL_CONNECTED)
     {
         delay(1000);
         Serial.print(".");
+        retries--;
+        if (retries == 0)
+        {
+            Serial.println("retries count 0 for WIFI, going to delay mode now and restarting...");
+            delay(1000 * 3);
+            ESP.restart();
+        }
     }
     Serial.println("");
     Serial.println("WiFi connected..!");
@@ -49,9 +57,9 @@ void MQTT_re_connect()
         retries--;
         if (retries == 0)
         {
-            // basically die and wait for WDT to reset me
-            while (1)
-                ;
+            Serial.println("retries count 0 for MQTT, going to delay mode now and restarting..");
+            delay(1000 * 3);
+            ESP.restart();
         }
     }
     send_mqtt_door_state(-2);

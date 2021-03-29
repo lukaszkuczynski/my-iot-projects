@@ -21,7 +21,7 @@ ADC_MODE(ADC_VDD); // measure internal voltage, please
 const int OLED_TOGGLE_PIN = 14;
 
 WiFiClient client;
-Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, 1883);
+Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, 1883, MQTT_USER, MQTT_PASSWORD);
 Adafruit_MQTT_Publish temperature_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/temperature");
 Adafruit_MQTT_Publish humudity_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/humidity");
 Adafruit_MQTT_Publish pressure_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/pressure");
