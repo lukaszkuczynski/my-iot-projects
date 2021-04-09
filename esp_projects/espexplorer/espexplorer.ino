@@ -22,9 +22,13 @@ const int resolution = 8;
 
 const int SERVO_PIN = 21;
 
+const int LEFT_ENCODER_PIN = 34;
+const int RIGHT_ENCODER_PIN = 32;
+
 enum LedStates{ON, OFF};
 
 enum VehicleMove {STOP, GO_BACK, GO_FORWARD};
+enum Motor {LEFT, RIGHT} ;
 
 LedStates ledState = ON;
 
@@ -37,9 +41,17 @@ long duration, distance; // Duration used to calculate distance
 
 unsigned long chrono = millis();
 
+int rightSpeed = 0;
+int rightCounter = 0;
 
+int leftSpeed = 0;
+int leftCounter = 0;
  
 Servo myservo; 
+
+//temporarily we use timer here, in real life encoder will be producing ticks
+hw_timer_t * timer = NULL;
+
 
 void setupMotors()
 {
@@ -56,6 +68,18 @@ void setupMotors()
   ledcAttachPin(SERVO_PIN, 4);
 
 }
+
+void IRAM_ATTR onTimer(){
+
+}
+
+void IRAM_ATTR leftEncoderInterrupt() {
+  leftCounter --;
+}
+
+void IRAM_ATTR rightEncoderInterrupt() {
+  rightCounter --;
+}
  
 void setup()
 {
@@ -66,7 +90,18 @@ void setup()
   pinMode(LED_PIN, OUTPUT);
   setupMotors();
   myservo.setPeriodHertz(50);    
-  myservo.attach(SERVO_PIN, 500, 2400); 
+  myservo.attach(SERVO_PIN, 500, 2400);
+
+  // temporarily something that produce ticks
+  timer = timerBegin(0, 80, true);
+  timerAttachInterrupt(timer, &onTimer, true);
+  timerAlarmWrite(timer, 1000, true);
+  timerAlarmEnable(timer);
+
+  pinMode(LEFT_ENCODER_PIN, INPUT_PULLUP);
+  pinMode(RIGHT_ENCODER_PIN, INPUT_PULLUP);
+  attachInterrupt(LEFT_ENCODER_PIN, leftEncoderInterrupt, FALLING);
+  attachInterrupt(RIGHT_ENCODER_PIN, rightEncoderInterrupt, FALLING);
 }
 
 #define STEP_COUNT 5
@@ -87,6 +122,14 @@ void measure_around() {
   }
 }
 
+
+float measureAhead() {
+  int pos = 90; 
+  myservo.write(pos); 
+  float dist = measure_distance();
+  Serial.println(dist);
+  return dist;
+}
 
 float measure_distance() {
   digitalWrite(trigPin, LOW);
@@ -229,8 +272,58 @@ void walk_alone_loop() {
     delay(2000);
     stopMotors();
 }
+
+
+void stateMachineWalkAlone() {
+  if (rightSpeed > 0) {
+    ledcWrite(right_forward_channel, rightSpeed);
+    ledcWrite(right_backward_channel, 0);        
+  } else {
+    ledcWrite(right_backward_channel, abs(rightSpeed));    
+    ledcWrite(right_forward_channel, 0);        
+  }
+  if (leftSpeed > 0) {
+    ledcWrite(left_forward_channel, leftSpeed);   
+    ledcWrite(left_backward_channel, 0);             
+  } else {
+    ledcWrite(left_backward_channel, abs(leftSpeed));    
+    ledcWrite(left_forward_channel, 0);        
+  }
+}
+
+void requestTicks(float distanceAhead){
+  if (distanceAhead > 50) {
+    rightCounter = 50;
+    leftCounter = 50;
+    rightSpeed = 120;
+    leftSpeed = 120;
+  } else {
+    rightSpeed = 0;
+    leftSpeed = 0;
+  }
+}
+
+void blinkLed() {
+ digitalWrite(LED_PIN, HIGH); 
+ delay(200);
+ digitalWrite(LED_PIN, LOW); 
+}
+
+void walkAloneWithCounters() {
+  // request to go is the result of measurements
+  if (rightCounter <= 0 && leftCounter <= 0) {
+//    measure_around();
+//    int turnCalculated = calculateTurn();
+//    turnVehicleToDegrees(turnCalculated);
+      // let's simplify now and only decide whether I can go forward
+      float distanceAhead = measureAhead();
+      requestTicks(distanceAhead);
+      blinkLed();
+  }  
+  stateMachineWalkAlone(); 
+}
  
 void loop()
 {
-  walk_alone_loop();
+  walkAloneWithCounters();
 }
