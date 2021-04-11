@@ -28,7 +28,8 @@ const int RIGHT_ENCODER_PIN = 32;
 enum LedStates{ON, OFF};
 
 enum VehicleMove {STOP, GO_BACK, GO_FORWARD};
-enum Motor {LEFT, RIGHT} ;
+enum Motor {LEFT, RIGHT};
+enum Direction {TURN_LEFT, TURN_RIGHT, GO_AHEAD};
 
 LedStates ledState = ON;
 
@@ -70,15 +71,19 @@ void setupMotors()
 }
 
 void IRAM_ATTR onTimer(){
-
+  
 }
+
+void stateMachineWalkAlone();
 
 void IRAM_ATTR leftEncoderInterrupt() {
   leftCounter --;
+//  stateMachineWalkAlone();
 }
 
 void IRAM_ATTR rightEncoderInterrupt() {
   rightCounter --;
+//  stateMachineWalkAlone();
 }
  
 void setup()
@@ -117,7 +122,7 @@ void measure_around() {
   for (step_no = 0; step_no <= STEP_COUNT-1; step_no += 1) { 
     pos = (step_no + 1) * SERVO_STEP;
     myservo.write(pos); 
-    delay(1000);
+    delay(100);
     distance_map[step_no] = measure_distance();
   }
 }
@@ -260,7 +265,12 @@ int calculateTurn() {
     }
   }
   Serial.print("Max index "); Serial.print(maxIndex); Serial.print(", max distance"); Serial.println(maxDistance);
-  return (maxIndex + 1) * SERVO_STEP;
+  if (maxDistance < 30) {
+    // we are lost, reverse!
+    return 270;
+  } else {
+    return (maxIndex + 1) * SERVO_STEP;
+  }
 }
 
 void walk_alone_loop() {
@@ -305,25 +315,80 @@ void requestTicks(float distanceAhead){
 
 void blinkLed() {
  digitalWrite(LED_PIN, HIGH); 
- delay(200);
+// delay(200);
  digitalWrite(LED_PIN, LOW); 
 }
 
+void requestTurnWithAbsolute(int degrees) {
+  int localDegrees = 0;
+  if (degrees == 90) {
+    //no turn, go straight
+    requestDrive(GO_AHEAD, 0, 100);
+  } else {
+    localDegrees = abs(degrees - 90);
+    if (degrees < 90) {
+      requestDrive(TURN_RIGHT, localDegrees, 0);
+    } else {
+      requestDrive(TURN_LEFT, localDegrees, 0);
+    }
+  }
+}
+
 void walkAloneWithCounters() {
-  // request to go is the result of measurements
-  if (rightCounter <= 0 && leftCounter <= 0) {
-//    measure_around();
-//    int turnCalculated = calculateTurn();
-//    turnVehicleToDegrees(turnCalculated);
-      // let's simplify now and only decide whether I can go forward
-      float distanceAhead = measureAhead();
-      requestTicks(distanceAhead);
-      blinkLed();
-  }  
   stateMachineWalkAlone(); 
+  if (rightCounter <= 0 && leftCounter <= 0) {
+    float distanceAhead = measureAhead();
+    if (distanceAhead > 50) {
+      requestDrive(GO_AHEAD, 0, 100);
+    } else {
+      digitalWrite(LED_PIN, HIGH);
+      measure_around();
+      int turnCalculated = calculateTurn();
+      requestTurnWithAbsolute(turnCalculated);
+      digitalWrite(LED_PIN, LOW);
+    }
+  }  
+}
+
+int calculateTicksTurn(int degrees) {
+  return degrees / 15;
+}
+
+int calculateTicksStraight(int distanceCm) {
+  if (distanceCm > 50) {
+    return 10;
+  } else {
+    return 2;
+  }
+}
+
+void requestDrive(Direction direction, int degrees, int aheadDistance) {
+  if (direction == GO_AHEAD) {
+    int speed = 120;
+    int noOfTicks = calculateTicksStraight(aheadDistance); 
+    rightSpeed = speed;
+    leftSpeed = speed;
+    rightCounter = noOfTicks;
+    leftCounter = noOfTicks;
+  } else {
+    int noOfTicks = calculateTicksTurn(degrees);
+    int speed = 120;
+    if (direction == TURN_RIGHT) {
+      rightSpeed = speed;
+      leftSpeed = -1 * speed;
+      rightCounter = noOfTicks;
+    } else if (direction == TURN_LEFT) {
+      leftSpeed = speed;
+      rightSpeed = -1 * speed;
+      leftCounter = noOfTicks;
+    }
+  }
 }
  
 void loop()
 {
-  walkAloneWithCounters();
+//        measure_around();
+//  delay(2000);
+  walkAloneWithCounters();  
+//  avoid_contact_loop();    
 }
