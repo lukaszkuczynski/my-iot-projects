@@ -9,7 +9,7 @@ const int LED_PIN = 2;
 
 const int left_forward_pin = 18;
 const int left_backward_pin = 19;
-const int right_forward_pin = 22;
+const int right_forward_pin = 25;
 const int right_backward_pin = 23;
 
 const int left_forward_channel = 6;
@@ -20,7 +20,7 @@ const int right_backward_channel = 9;
 const int freq = 5000;
 const int resolution = 8;
 
-const int SERVO_PIN = 21;
+const int SERVO_PIN = 26;
 
 const int LEFT_ENCODER_PIN = 34;
 const int RIGHT_ENCODER_PIN = 32;
@@ -109,10 +109,10 @@ void setup()
   attachInterrupt(RIGHT_ENCODER_PIN, rightEncoderInterrupt, FALLING);
 }
 
-#define STEP_COUNT 5
+#define STEP_COUNT 7
 float distance_map[STEP_COUNT];
-#define SERVO_MIN 30
-#define SERVO_MAX 150
+#define SERVO_MIN 0
+#define SERVO_MAX 180
 #define SERVO_STEP (SERVO_MAX-SERVO_MIN) / (STEP_COUNT - 1)
 
 void measure_around() {
@@ -122,12 +122,14 @@ void measure_around() {
   for (step_no = 0; step_no <= STEP_COUNT-1; step_no += 1) { 
     pos = (step_no + 1) * SERVO_STEP;
     myservo.write(pos); 
-    delay(100);
+    delay(300);
     distance_map[step_no] = measure_distance();
   }
+  myservo.write(90); 
+
 }
 
-
+  
 float measureAhead() {
   int pos = 90; 
   myservo.write(pos); 
@@ -265,7 +267,7 @@ int calculateTurn() {
     }
   }
   Serial.print("Max index "); Serial.print(maxIndex); Serial.print(", max distance"); Serial.println(maxDistance);
-  if (maxDistance < 30) {
+  if (maxDistance < 60) {
     // we are lost, reverse!
     return 270;
   } else {
@@ -337,6 +339,8 @@ void requestTurnWithAbsolute(int degrees) {
 void walkAloneWithCounters() {
   stateMachineWalkAlone(); 
   if (rightCounter <= 0 && leftCounter <= 0) {
+    stopMotors();
+    delay(500);
     float distanceAhead = measureAhead();
     if (distanceAhead > 50) {
       requestDrive(GO_AHEAD, 0, 100);
@@ -351,12 +355,12 @@ void walkAloneWithCounters() {
 }
 
 int calculateTicksTurn(int degrees) {
-  return degrees / 15;
+  return degrees / 10;
 }
 
 int calculateTicksStraight(int distanceCm) {
   if (distanceCm > 50) {
-    return 10;
+    return 20;
   } else {
     return 2;
   }
@@ -387,8 +391,8 @@ void requestDrive(Direction direction, int degrees, int aheadDistance) {
  
 void loop()
 {
-//        measure_around();
-//  delay(2000);
+//  measureAhead();
+//  delay(1000);
   walkAloneWithCounters();  
 //  avoid_contact_loop();    
 }
