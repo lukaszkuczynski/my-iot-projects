@@ -3,6 +3,8 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 
+#include "mqtt_communication.h";
+
 #define echoPin 5 // Echo Pin
 #define trigPin 4 // Trigger Pin
 
@@ -125,6 +127,8 @@ void setup()
   }
   display.display();
   display.clearDisplay();
+
+  setup_wifi();
 }
 
 #define STEP_COUNT 5
@@ -167,6 +171,7 @@ void measure_around() {
     delay(SERVO_DELAY);
     distance_map[step_no] = measure_distance();
   }
+  sendLocation(distance_map);
   myservo.write(90); 
 }
 
@@ -178,6 +183,7 @@ float measureAhead() {
   Serial.println(dist);
   char lcdText[32];
   snprintf_P(lcdText, sizeof(lcdText), PSTR("... %.0f"), dist);
+  sendAhead(dist);
   return dist;
 }
 
