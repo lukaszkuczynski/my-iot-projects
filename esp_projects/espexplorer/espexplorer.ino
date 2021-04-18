@@ -1,9 +1,16 @@
 //https://madhephaestus.github.io/ESP32Servo/annotated.html
 #include <ESP32Servo.h>
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
 
 #define echoPin 5 // Echo Pin
 #define trigPin 4 // Trigger Pin
 
+
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define OLED_RESET     -1 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 const int LED_PIN = 2;
 
@@ -50,9 +57,14 @@ int leftCounter = 0;
  
 Servo myservo; 
 
+const int DELAY_DECISION = 500;
+const int SERVO_DELAY = 300;
+
 //temporarily we use timer here, in real life encoder will be producing ticks
 hw_timer_t * timer = NULL;
 
+const float TICKS_PER_CM = 1.0;
+const float MAX_AHEAD_DISTANCE = 100.0;
 
 void setupMotors()
 {
@@ -67,7 +79,6 @@ void setupMotors()
   ledcAttachPin(right_backward_pin, right_backward_channel);
 
   ledcAttachPin(SERVO_PIN, 4);
-
 }
 
 void IRAM_ATTR onTimer(){
@@ -107,26 +118,56 @@ void setup()
   pinMode(RIGHT_ENCODER_PIN, INPUT_PULLUP);
   attachInterrupt(LEFT_ENCODER_PIN, leftEncoderInterrupt, FALLING);
   attachInterrupt(RIGHT_ENCODER_PIN, rightEncoderInterrupt, FALLING);
+
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+  display.display();
+  display.clearDisplay();
 }
 
-#define STEP_COUNT 7
+#define STEP_COUNT 5
 float distance_map[STEP_COUNT];
 #define SERVO_MIN 0
 #define SERVO_MAX 180
 #define SERVO_STEP (SERVO_MAX-SERVO_MIN) / (STEP_COUNT - 1)
+
+
+void drawText(String text, int line, bool clear) {
+  if (clear) {
+    display.clearDisplay();
+  }
+  display.setTextSize(2);             
+  display.setTextColor(WHITE);        
+  display.setCursor(line, 0);         
+  display.println(text);
+  display.display();
+}
+
+void drawOneLineText(String text) {
+  display.clearDisplay();
+  display.setTextSize(2);        
+  display.setTextColor(WHITE);   
+  display.setCursor(0, 0);    
+  display.println(text);
+  display.display();
+}
 
 void measure_around() {
   int steps;
   int pos = 0; 
   int step_no = 0;
   for (step_no = 0; step_no <= STEP_COUNT-1; step_no += 1) { 
-    pos = (step_no + 1) * SERVO_STEP;
+    distance_map[step_no] = -1;
+  }
+  for (step_no = 0; step_no <= STEP_COUNT-1; step_no += 1) { 
+    pos = SERVO_MIN + (step_no * SERVO_STEP);
     myservo.write(pos); 
-    delay(300);
+    delay(SERVO_DELAY);
     distance_map[step_no] = measure_distance();
   }
   myservo.write(90); 
-
 }
 
   
@@ -135,6 +176,8 @@ float measureAhead() {
   myservo.write(pos); 
   float dist = measure_distance();
   Serial.println(dist);
+  char lcdText[32];
+  snprintf_P(lcdText, sizeof(lcdText), PSTR("... %.0f"), dist);
   return dist;
 }
 
@@ -256,6 +299,7 @@ void avoid_contact_loop() {
 }
 
 int calculateTurn() {
+  int decision;
   for (int i = 0; i < STEP_COUNT ; i++) {Serial.print(distance_map[i]); Serial.print(" ");}
   Serial.println("--");
   float maxDistance = 0;
@@ -269,10 +313,15 @@ int calculateTurn() {
   Serial.print("Max index "); Serial.print(maxIndex); Serial.print(", max distance"); Serial.println(maxDistance);
   if (maxDistance < 60) {
     // we are lost, reverse!
-    return 270;
+    decision = 270;
   } else {
-    return (maxIndex + 1) * SERVO_STEP;
+    decision = maxIndex * SERVO_STEP;
   }
+  char lcdRow[40];
+  snprintf_P(lcdRow, sizeof(lcdRow), PSTR("<< %.0f %.0f >> %.0f %.0f = %.0f. dec[%d]"), distance_map[0], 
+  distance_map[1], distance_map[3], distance_map[4], distance_map[2], decision);
+  drawOneLineText(lcdRow);
+  return decision;
 }
 
 void walk_alone_loop() {
@@ -340,10 +389,10 @@ void walkAloneWithCounters() {
   stateMachineWalkAlone(); 
   if (rightCounter <= 0 && leftCounter <= 0) {
     stopMotors();
-    delay(500);
+    delay(DELAY_DECISION);
     float distanceAhead = measureAhead();
     if (distanceAhead > 50) {
-      requestDrive(GO_AHEAD, 0, 100);
+      requestDrive(GO_AHEAD, 0, distanceAhead);
     } else {
       digitalWrite(LED_PIN, HIGH);
       measure_around();
@@ -359,16 +408,21 @@ int calculateTicksTurn(int degrees) {
 }
 
 int calculateTicksStraight(int distanceCm) {
-  if (distanceCm > 50) {
-    return 20;
-  } else {
-    return 2;
-  }
+  int ticksMaximum = int(distanceCm / TICKS_PER_CM);
+  // let's take half the way to go
+  int ticksToGo = ticksMaximum / 2;
+  char lcdText[32];
+  snprintf_P(lcdText, sizeof(lcdText), PSTR("ahead cm [%d] ticks %d"), distanceCm, ticksToGo);
+  drawOneLineText(lcdText);
+  return ticksToGo;
 }
 
-void requestDrive(Direction direction, int degrees, int aheadDistance) {
+void requestDrive(Direction direction, int degrees, float aheadDistance) {
   if (direction == GO_AHEAD) {
     int speed = 120;
+    if (aheadDistance > MAX_AHEAD_DISTANCE) {
+      aheadDistance = MAX_AHEAD_DISTANCE;
+    }
     int noOfTicks = calculateTicksStraight(aheadDistance); 
     rightSpeed = speed;
     leftSpeed = speed;
@@ -377,11 +431,11 @@ void requestDrive(Direction direction, int degrees, int aheadDistance) {
   } else {
     int noOfTicks = calculateTicksTurn(degrees);
     int speed = 120;
-    if (direction == TURN_RIGHT) {
+    if (direction == TURN_LEFT) {
       rightSpeed = speed;
       leftSpeed = -1 * speed;
       rightCounter = noOfTicks;
-    } else if (direction == TURN_LEFT) {
+    } else if (direction == TURN_RIGHT) {
       leftSpeed = speed;
       rightSpeed = -1 * speed;
       leftCounter = noOfTicks;
@@ -395,4 +449,5 @@ void loop()
 //  delay(1000);
   walkAloneWithCounters();  
 //  avoid_contact_loop();    
+ 
 }
