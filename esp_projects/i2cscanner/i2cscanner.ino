@@ -15,7 +15,7 @@ void setup() {
   scanPorts();
 }
 
-uint8_t portArray[] = {16, 5, 4, 0, 2, 14, 12, 13};
+uint8_t portArray[] = {16, 5, 4, 0, 2, 14, 12, 13,21,22};
 //String portMap[] = {"D0", "D1", "D2", "D3", "D4", "D5", "D6", "D7"}; //for Wemos
 String portMap[] = {"GPIO16", "GPIO5", "GPIO4", "GPIO0", "GPIO2", "GPIO14", "GPIO12", "GPIO13"};
 
@@ -66,4 +66,3 @@ void check_if_exist_I2C() {
 
 void loop() {
 }
-

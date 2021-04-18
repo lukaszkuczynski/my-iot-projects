@@ -8,7 +8,7 @@ Servo myservo;  // create servo object to control a servo
  
 int pos = 0;    // variable to store the servo position
 // Recommended PWM GPIO pins on the ESP32 include 2,4,12-19,21-23,25-27,32-33 
-int servoPin = 21;
+int servoPin = 26;
  
 void setup() {
   // Allow allocation of all timers
