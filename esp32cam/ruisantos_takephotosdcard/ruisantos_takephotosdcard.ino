@@ -23,7 +23,7 @@
 #include <EEPROM.h>            // read and write from flash memory
 
 // define the number of bytes you want to access
-#define EEPROM_SIZE 1
+#define EEPROM_SIZE 64
 
 // Pin definition for CAMERA_MODEL_AI_THINKER
 #define PWDN_GPIO_NUM     32
@@ -46,7 +46,7 @@
 
 int pictureNumber = 0;
 
-void setup() {
+void originalSetup(){
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
  
   Serial.begin(115200);
@@ -105,7 +105,7 @@ void setup() {
   }
     
   camera_fb_t * fb = NULL;
-  
+  delay(2000);
   // Take Picture with Camera
   fb = esp_camera_fb_get();  
   if(!fb) {
@@ -114,37 +114,50 @@ void setup() {
   }
   // initialize EEPROM with predefined size
   EEPROM.begin(EEPROM_SIZE);
-  pictureNumber = EEPROM.read(0) + 1;
+  EEPROM.get(0, pictureNumber);
 
   // Path where new picture will be saved in SD Card
-  String path = "/picture" + String(pictureNumber) +".jpg";
 
-  fs::FS &fs = SD_MMC; 
-  Serial.printf("Picture file name: %s\n", path.c_str());
+  char filename[255];
+  snprintf(filename, sizeof(filename), "/photo/photo%06d.jpg", pictureNumber);
+
   
-  File file = fs.open(path.c_str(), FILE_WRITE);
+  fs::FS &fs = SD_MMC; 
+  Serial.printf("Picture file name: %s\n", filename);
+  
+  File file = fs.open(filename, FILE_WRITE);
   if(!file){
     Serial.println("Failed to open file in writing mode");
   } 
   else {
+    Serial.printf("writing %d len bytes", fb->len);
     file.write(fb->buf, fb->len); // payload (image), payload length
-    Serial.printf("Saved file to path: %s\n", path.c_str());
-    EEPROM.write(0, pictureNumber);
+//    file.print(fb);
+    Serial.printf("Saved file to path: %s\n", filename);
+    pictureNumber ++;
+    EEPROM.put(0, pictureNumber);
     EEPROM.commit();
   }
   file.close();
-  esp_camera_fb_return(fb); 
+  delay(1000);
+//  esp_camera_fb_return(fb); 
   
   // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
-  pinMode(4, OUTPUT);
-  digitalWrite(4, LOW);
-  rtc_gpio_hold_en(GPIO_NUM_4);
+//  pinMode(4, OUTPUT);
+//  digitalWrite(4, LOW);
+//  rtc_gpio_hold_en(GPIO_NUM_4);
   
-  delay(2000);
   Serial.println("Going to sleep now");
-  delay(2000);
+  delay(1000);
+
+  esp_sleep_enable_timer_wakeup(1000 * 1000 * 15);
+  
   esp_deep_sleep_start();
   Serial.println("This will never be printed");
+}
+
+void setup() {
+  originalSetup();
 }
 
 void loop() {
