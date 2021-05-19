@@ -24,7 +24,7 @@
 
 /************************* Adafruit.io Setup *********************************/
 
-#define AIO_SERVER "192.168.0.138"
+#define AIO_SERVER "192.168.100.10"
 #define AIO_SERVERPORT 1883 // use 8883 for SSL
 #define AIO_USERNAME "...your AIO username (see https://accounts.adafruit.com)..."
 //#define AIO_KEY         "...your AIO key..."
@@ -141,7 +141,7 @@ void MQTT_connect()
   Serial.print("Connecting to MQTT... ");
 
   uint8_t retries = 3;
-  while ((ret = mqtt.connect()) != 0)
+  while ((ret = mqtt.connect(MQTT_USER, MQTT_PASSWORD)) != 0)
   { // connect will return 0 for connected
     Serial.println(mqtt.connectErrorString(ret));
     Serial.println("Retrying MQTT connection in 5 seconds...");

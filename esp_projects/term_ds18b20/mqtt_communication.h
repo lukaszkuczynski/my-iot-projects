@@ -60,5 +60,6 @@ void sendTemp(String deviceId, float temp, int voltage) {
   serializeJson(doc, msg);
   Serial.println(msg);
   String channelName = "esp8266/temperature/"+deviceId;
+  Serial.println("Sending to channel named "+channelName);
   client.publish(channelName.c_str(), msg);
 }

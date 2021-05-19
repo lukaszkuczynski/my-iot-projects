@@ -1,9 +1,12 @@
+
 //https://madhephaestus.github.io/ESP32Servo/annotated.html
 #include <ESP32Servo.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 
+#ifdef WIFI
 #include "mqtt_communication.h";
+#endif
 
 #define echoPin 5 // Echo Pin
 #define trigPin 4 // Trigger Pin
@@ -128,7 +131,9 @@ void setup()
   display.display();
   display.clearDisplay();
 
+  #ifdef WIFI
   setup_wifi();
+  #endif
 }
 
 #define STEP_COUNT 5
@@ -171,8 +176,10 @@ void measure_around() {
     delay(SERVO_DELAY);
     distance_map[step_no] = measure_distance();
   }
-  sendLocation(distance_map);
   myservo.write(90); 
+  #ifdef WIFI
+  sendLocation(distance_map);
+  #endif
 }
 
   
@@ -183,7 +190,9 @@ float measureAhead() {
   Serial.println(dist);
   char lcdText[32];
   snprintf_P(lcdText, sizeof(lcdText), PSTR("... %.0f"), dist);
+  #ifdef WIFI
   sendAhead(dist);
+  #endif
   return dist;
 }
 
@@ -391,11 +400,18 @@ void requestTurnWithAbsolute(int degrees) {
   }
 }
 
+void slow_down(int speed) {
+  rightSpeed = speed;
+  leftSpeed = speed;
+  stateMachineWalkAlone(); 
+}
+
 void walkAloneWithCounters() {
   stateMachineWalkAlone(); 
   if (rightCounter <= 0 && leftCounter <= 0) {
-    stopMotors();
-    delay(DELAY_DECISION);
+    // stopMotors();
+    // delay(DELAY_DECISION);
+    slow_down(40);
     float distanceAhead = measureAhead();
     if (distanceAhead > 50) {
       requestDrive(GO_AHEAD, 0, distanceAhead);
@@ -451,8 +467,10 @@ void requestDrive(Direction direction, int degrees, float aheadDistance) {
  
 void loop()
 {
+  // measure_around();
 //  measureAhead();
 //  delay(1000);
+
   walkAloneWithCounters();  
 //  avoid_contact_loop();    
  

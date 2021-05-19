@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include "secrets.h"
+#include <ArduinoJson.h>
 
 const char* mqtt_server = "192.168.100.10";
 
@@ -49,15 +50,31 @@ void reconnect() {
 }
 
 void sendAhead(float aheadDistance) {
+  char msg[200];
   if (!client.connected()) {
     reconnect();
   }
-  client.publish("esp32/counter", "ahead");
+  StaticJsonDocument<200> doc;
+  doc["ahead"] = aheadDistance;
+  Serial.println(msg);
+
+  serializeJson(doc, msg);
+  client.publish("esp32/esplorer/ahead", msg);
 }
 
-void sendLocation(float distanceMap[]) {
+void sendLocation(float distanceMap[5]) {
+  char msg [500];
   if (!client.connected()) {
     reconnect();
   }
-  client.publish("esp32/counter", "location");
+  StaticJsonDocument<200> doc;
+  doc["0"] = distanceMap[0];
+  doc["45"] = distanceMap[1];
+  doc["90"] = distanceMap[2];
+  doc["135"] = distanceMap[3];
+  doc["180"] = distanceMap[4];
+  serializeJson(doc, msg);
+  Serial.println(msg);
+  client.publish("esp32/esplorer/around", msg);
+
 }
