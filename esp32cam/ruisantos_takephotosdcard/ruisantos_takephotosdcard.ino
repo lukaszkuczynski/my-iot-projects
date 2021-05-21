@@ -119,7 +119,7 @@ void originalSetup(){
   // Path where new picture will be saved in SD Card
 
   char filename[255];
-  snprintf(filename, sizeof(filename), "/photo/photo%06d.jpg", pictureNumber);
+  snprintf(filename, sizeof(filename), "/photo%06d.jpg", pictureNumber);
 
   
   fs::FS &fs = SD_MMC; 
@@ -143,8 +143,6 @@ void originalSetup(){
 //  esp_camera_fb_return(fb); 
   
   // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
-//  pinMode(4, OUTPUT);
-//  digitalWrite(4, LOW);
 //  rtc_gpio_hold_en(GPIO_NUM_4);
   
   Serial.println("Going to sleep now");
