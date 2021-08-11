@@ -1,5 +1,5 @@
 
-SAVED_MODEL_PATH = "./ssd_mobilenet.tflite"
+SAVED_MODEL_PATH = "./model_mobilenet_bee.tflite"
 
 import numpy as np
 from tflite_runtime.interpreter import Interpreter
@@ -17,7 +17,6 @@ coco_labels = {}
 with open("./coco_labels.txt") as fread:
     lines = fread.read().split('\n')
     for line in lines: 
-        print(line)
         number = re.split("\s+", line)[0]
         text = re.split("\s+", line)[1:]
         coco_labels[int(number)] = text
@@ -52,8 +51,8 @@ def run_inference():
   output_details = interpreter.get_output_details()
   input_shape = input_details[0]['shape']
   image_original = take_pic()
-  im_resized = image_original.resize((300,300))
-  input_data = np.array(im_resized, np.uint8)
+  im_resized = image_original.resize((320,320))
+  input_data = np.array(im_resized, np.float32)
   interpreter.set_tensor(input_details[0]['index'], [input_data])
   interpreter.invoke()
   interpret_results_coco(output_details)
