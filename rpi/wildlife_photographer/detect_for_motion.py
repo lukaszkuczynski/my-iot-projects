@@ -13,7 +13,8 @@ SAVED_MODEL_PATH = "./model_mobilenet_bee.tflite"
 SAVED_MODEL_PATH = "./trailertruck.tflite"
 ALTERED_IMAGE_OUTPUT = "/home/pi/Pictures/wildlife/"
 TRAINED_MODEL_IMAGE_SIZE = (384,384)
-OBSERVED_LABELS = ["big"]
+OBSERVED_LABELS = ["bigtrailer"]
+MIN_SCORE = 0.6
 
 interpreter = Interpreter(SAVED_MODEL_PATH)
 interpreter.allocate_tensors()
@@ -74,7 +75,7 @@ def handle_new_file(filepath):
     interpreter.set_tensor(input_details[0]['index'], [input_data])
     interpreter.invoke()
     label_map = {0: 'big', 1: 'bigtrailer'}
-    res = interpret_results_custom(output_details, im_resized, filepath, 0.5, label_map)
+    res = interpret_results_custom(output_details, im_resized, filepath, MIN_SCORE, label_map)
     send_message_if_needed(res, filepath, OBSERVED_LABELS)
     print(res)
 

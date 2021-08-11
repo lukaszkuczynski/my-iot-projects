@@ -1,0 +1,14 @@
+[Unit]
+Description=Raspberry PI Watcher using TfLite
+After=network.target
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=1
+User=pi
+WorkingDirectory=/home/pi/prj/my-iot-projects/rpi/wildlife_photographer
+ExecStart=/home/pi/prj/my-iot-projects/rpi/wildlife_photographer/venv/bin/python detect_for_motion.py
+
+[Install]
+WantedBy=multi-user.target
