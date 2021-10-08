@@ -1,0 +1,20 @@
+{
+    "CompilationJobName": "${jobname}",
+    "RoleArn": "${your_sagemaker_role_arn}",
+    "InputConfig": {
+        "S3Uri": "s3://${your_bucket}/${your_input_folder}/tf_frcnn.tar.gz",
+        "DataInputConfig": "{'image_tensor': [1,512,512,3]}",
+        "Framework": "TENSORFLOW"
+    },
+    "OutputConfig": {
+        "S3OutputLocation": "s3://${your_bucket}/${your_output_folder}",
+        "TargetPlatform": {
+            "Os": "LINUX",
+            "Arch": "X86_64"
+        },
+        "CompilerOptions": "{'mcpu': 'skylake-avx512'}"
+    },
+    "StoppingCondition": {
+        "MaxRuntimeInSeconds": 1800
+    }
+}
