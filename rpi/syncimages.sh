@@ -1,2 +1,3 @@
-rsync -av pi@192.168.100.20:/home/pi/Pictures/timelapse /home/luk/Pictures/rpi3camera/
+#rsync -av pi@192.168.100.20:/var/lib/motion/* ~/Pictures/rpi/motion
+rsync -av pi@192.168.100.20:Pictures/wildlife/* ~/Pictures/rpi/wildlife
 
