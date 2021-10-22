@@ -2,3 +2,5 @@
 .pio
 my_local_wifi.h
 secrets.h
+__pycache__
+venv
