@@ -9,13 +9,13 @@ const int right_forward_channel = 2;
 const int right_backward_channel = 3;
 
 
-const int freq = 5000;
+const int freq = 50;
 const int resolution = 8;
  
 void setup(){
 //  pinMode(left_forward, OUTPUT);
 //  pinMode(left_backward, OUTPUT);
-  
+  Serial.begin(115200);
   ledcSetup(left_forward_channel, freq, resolution);
   ledcSetup(left_backward_channel, freq, resolution);
   ledcSetup(right_forward_channel, freq, resolution);

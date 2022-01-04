@@ -20,12 +20,18 @@ ADC_MODE(ADC_VDD); // measure internal voltage, please
 
 const int OLED_TOGGLE_PIN = 14;
 
+const int VOLTAGE_OFFSET_MV = 400;
+const int VOLTAGE_LIFEPO_LOW = 2950;
+const int VOLTAGE_LIFEPO_CRITICAL = 2800;
+
 WiFiClient client;
 Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, 1883, MQTT_USER, MQTT_PASSWORD);
 Adafruit_MQTT_Publish temperature_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/temperature");
 Adafruit_MQTT_Publish humudity_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/humidity");
 Adafruit_MQTT_Publish pressure_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/pressure");
 Adafruit_MQTT_Publish voltage_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/voltage");
+Adafruit_MQTT_Publish warning_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/warning");
+
 
 const int SLEEP_TIME = 1e6 * 60 * 5;
 
@@ -38,7 +44,7 @@ void connectWifi() {
   Serial.println(F(" WiFi connected."));
 }
 
-void sendTelemetry(float temperature, float pressure, float humidity, int voltage) {
+void sendTelemetry(float temperature, float pressure, float humidity, int voltage, String warning) {
   MQTT_connect();
   int ret;
   ret = temperature_publish.publish(temperature);
@@ -65,15 +71,18 @@ void sendTelemetry(float temperature, float pressure, float humidity, int voltag
   } else {
     Serial.println("Telemetry sent.");
   }
+  if (warning != "") {
+    warning_publish.publish((char*) warning.c_str());
+  }
 
 }
 
 void setup() {
   
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Starting");
   pinMode(OLED_TOGGLE_PIN, OUTPUT);
-
+  String warning = "";
   Wire.begin();
 
   digitalWrite(OLED_TOGGLE_PIN, HIGH); // Turn on the display
@@ -102,11 +111,23 @@ void setup() {
   float humidity = bme.readHumidity();
 
   int internalVoltage = readInternalVoltage();
-
+  if (internalVoltage < VOLTAGE_LIFEPO_CRITICAL) {
+    Serial.println("Critical voltage error, shutting down soon...");
+    warning = "ERROR: Voltage is critical. Will shut down";
+  }
+  if (internalVoltage < VOLTAGE_LIFEPO_LOW) {
+    Serial.println("Low voltage warning");
+    warning = "WARN : Voltage is low";
+  }
+  
   displayTelemetryOLED(temperature, pressure, humidity, internalVoltage);
 
   connectWifi();
-  sendTelemetry(temperature, pressure, humidity, internalVoltage);
+  sendTelemetry(temperature, pressure, humidity, internalVoltage, warning);
+
+  if (internalVoltage < VOLTAGE_LIFEPO_CRITICAL) {
+    ESP.deepSleep(0);
+  }
   
   delay(5000);
   digitalWrite(OLED_TOGGLE_PIN, LOW); // Turn off the display
@@ -139,8 +160,10 @@ void displayTelemetryOLED(float temperature, float pressure, float humidity, int
 
 int readInternalVoltage() {
   int internalVoltage = ESP.getVcc();
-  Serial.printf("ADC %f\n", internalVoltage);
-  return internalVoltage;
+  Serial.printf("real voltage %d\n", internalVoltage);
+  int voltageWithOffset = internalVoltage + VOLTAGE_OFFSET_MV;
+  Serial.printf("offseted voltage %d\n", voltageWithOffset);
+  return voltageWithOffset;
 }
 
 void MQTT_connect() {
