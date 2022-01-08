@@ -35,7 +35,7 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("esp8266_temp", "rpi", MQTT_PASSWORD)) {
+    if (client.connect("esp8266_temp")) {
       Serial.println("connected");
       // Subscribe
       // client.subscribe("esp32/output");
@@ -57,6 +57,7 @@ void sendTemp(String deviceId, float temp, int voltage) {
   StaticJsonDocument<200> doc;
   doc["temp"] = temp;
   doc["voltage"] = voltage;
+  doc["device"] = deviceId;
   serializeJson(doc, msg);
   Serial.println(msg);
   String channelName = "esp8266/temperature/"+deviceId;
