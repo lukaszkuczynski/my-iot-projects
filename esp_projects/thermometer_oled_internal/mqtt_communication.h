@@ -19,9 +19,9 @@ void setup_wifi() {
   // We start by connecting to a WiFi network
   Serial.println();
   Serial.print("Connecting to ");
-  Serial.println(ssid);
+  Serial.println(WIFI_SSID);
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
     #ifdef ESP32
@@ -57,6 +57,34 @@ void reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
     }
+  }
+}
+
+void sendTelemetry(float temperature, float pressure, float humidity, int voltage, String warning) {
+  char msg[500];
+  if (!client.connected()) {
+    reconnect();
+  }
+  String deviceId = SENSOR_NAME;
+  StaticJsonDocument<200> doc;
+  doc["temp"] = temperature;
+  doc["voltage"] = voltage;
+  doc["device"] = deviceId;
+  doc["pressure"] = pressure;
+  doc["humidity"] = humidity;
+  serializeJson(doc, msg);
+  String channelName = "lukmqtt/sensor/"+deviceId;
+  Serial.println("Sending to channel named "+channelName);
+  client.publish(channelName.c_str(), msg);
+
+  if (warning != "") {
+    char msgWarning[200];
+    StaticJsonDocument<200> docWarning;
+    docWarning["warning"] = warning;
+    serializeJson(docWarning, msgWarning);
+    String channelName = "lukmqtt/sensor/warning/"+deviceId;
+    Serial.println("Sending to channel named "+channelName);
+    client.publish(channelName.c_str(), msgWarning);
   }
 }
 

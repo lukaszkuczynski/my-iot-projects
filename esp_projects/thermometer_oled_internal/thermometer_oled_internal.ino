@@ -5,7 +5,9 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
-#include "secrets.h" // this file has definitions for 1)WIFI_SSID, 2) WIFI_PASSWORD, 3)MQTT_SERVER url
+#define SENSOR_NAME "temperature_office"
+
+#include "mqtt_communication.h"
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
@@ -24,58 +26,9 @@ const int VOLTAGE_OFFSET_MV = 400;
 const int VOLTAGE_LIFEPO_LOW = 2950;
 const int VOLTAGE_LIFEPO_CRITICAL = 2800;
 
-WiFiClient client;
-Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, 1883, MQTT_USER, MQTT_PASSWORD);
-Adafruit_MQTT_Publish temperature_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/temperature");
-Adafruit_MQTT_Publish humudity_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/humidity");
-Adafruit_MQTT_Publish pressure_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/pressure");
-Adafruit_MQTT_Publish voltage_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/voltage");
-Adafruit_MQTT_Publish warning_publish = Adafruit_MQTT_Publish(&mqtt, "lukmqtt/internal_1/warning");
-
 
 const int SLEEP_TIME = 1e6 * 60 * 5;
 
-void connectWifi() {
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(F("."));
-  }
-  Serial.println(F(" WiFi connected."));
-}
-
-void sendTelemetry(float temperature, float pressure, float humidity, int voltage, String warning) {
-  MQTT_connect();
-  int ret;
-  ret = temperature_publish.publish(temperature);
-  if (!ret) {
-    Serial.println("Failed sending telemetry!!");
-  } else {
-    Serial.println("Telemetry sent.");
-  }
-  ret = humudity_publish.publish(humidity);
-  if (!ret) {
-    Serial.println("Failed sending telemetry!!");
-  } else {
-    Serial.println("Telemetry sent.");
-  }
-  ret = pressure_publish.publish(pressure);
-  if (!ret) {
-    Serial.println("Failed sending telemetry!!");
-  } else {
-    Serial.println("Telemetry sent.");
-  }
-  ret = voltage_publish.publish(voltage);
-  if (!ret) {
-    Serial.println("Failed sending telemetry!!");
-  } else {
-    Serial.println("Telemetry sent.");
-  }
-  if (warning != "") {
-    warning_publish.publish((char*) warning.c_str());
-  }
-
-}
 
 void setup() {
   
@@ -122,7 +75,7 @@ void setup() {
   
   displayTelemetryOLED(temperature, pressure, humidity, internalVoltage);
 
-  connectWifi();
+  setup_wifi();
   sendTelemetry(temperature, pressure, humidity, internalVoltage, warning);
 
   if (internalVoltage < VOLTAGE_LIFEPO_CRITICAL) {
@@ -166,27 +119,6 @@ int readInternalVoltage() {
   return voltageWithOffset;
 }
 
-void MQTT_connect() {
-  int8_t ret;
-  // Stop if already connected.
-  if (mqtt.connected()) {
-    return;
-  }
-  Serial.print("Connecting to MQTT... ");
-  uint8_t retries = 3;
-  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-       Serial.println(mqtt.connectErrorString(ret));
-       Serial.println("Retrying MQTT connection in 5 seconds...");
-       mqtt.disconnect();
-       delay(5000);  // wait 5 seconds
-       retries--;
-       if (retries == 0) {
-         // basically die and wait for WDT to reset me
-         while (1);
-       }
-  }
-  Serial.println("MQTT Connected!");
-}
 
 void loop() {
 }
