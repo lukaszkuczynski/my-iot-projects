@@ -1,4 +1,4 @@
-// This post referred to this git. I just trimmed cam and wifi part.
+  // This post referred to this git. I just trimmed cam and wifi part.
 // https://github.com/v12345vtm/CameraWebserver2SD/blob/master/CameraWebserver2SD/CameraWebserver2SD.ino
 
 #include "FS.h" 
@@ -19,7 +19,7 @@ void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
     }
 
     File file = root.openNextFile();
-    while(file){
+      while(file){
         if(file.isDirectory()){
             Serial.print("  DIR : ");
             Serial.println(file.name());

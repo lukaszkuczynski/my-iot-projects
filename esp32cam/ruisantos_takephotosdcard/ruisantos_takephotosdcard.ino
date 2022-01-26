@@ -140,10 +140,10 @@ void originalSetup(){
   }
   file.close();
   delay(1000);
-//  esp_camera_fb_return(fb); 
+  esp_camera_fb_return(fb); 
   
   // Turns off the ESP32-CAM white on-board LED (flash) connected to GPIO 4
-//  rtc_gpio_hold_en(GPIO_NUM_4);
+  rtc_gpio_hold_en(GPIO_NUM_4);
   
   Serial.println("Going to sleep now");
   delay(1000);
