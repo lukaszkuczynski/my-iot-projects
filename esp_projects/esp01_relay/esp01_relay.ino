@@ -1,10 +1,8 @@
 // original code from 
 // https://www.instructables.com/ESP0101S-RELAY-MODULE-TUTORIAL/
-
 #include <ESP8266WiFi.h>
+#include "secrets.h"
  
-const char* ssid = "YOUR SSID"; // fill in here your router or wifi SSID
-const char* password = "YOUR PASSWORD"; // fill in here your router or wifi password
  #define RELAY 0 // relay connected to  GPIO0
 WiFiServer server(80);
  
@@ -37,7 +35,6 @@ void setup()
  
   // Print the IP address
   Serial.print("Use this URL to connect: ");
-  Serial.print("https://192.168.0.178/");
   Serial.print(WiFi.localIP());
   Serial.println("/");
  
